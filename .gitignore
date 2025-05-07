@@ -1,0 +1,9 @@
+# VS Code generated files
+.vscode/
+
+# MacOS files
+.DS_Store
+
+# Virtual environment files
+Pipfile
+Pipfile.lock
