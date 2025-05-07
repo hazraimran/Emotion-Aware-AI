@@ -1,8 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import matplotlib.pyplot as plt
-from datetime import datetime
-import re
+from util import clean_timestamp
 import numpy as np
 
 # Path to google firebase service account certificate
@@ -58,6 +57,8 @@ def extract_duration(collection_name, db):
 def plot_duration(durations:list):
     """
         Plot a histogram that shows distribution of session duration
+
+        durations: a list of session durations
     """
     min_duration = min(durations)
     max_duration = max(durations)
@@ -71,16 +72,6 @@ def plot_duration(durations:list):
     plt.ylabel("Number of Sessions")
     plt.tight_layout()
     plt.show()
-        
-def clean_timestamp(ts_str):
-    # Replace Z with +00:00 for timezone compatibility
-    ts_str = ts_str.replace("Z", "+00:00")
-
-    # Regex to truncate fractional seconds to 6 digits
-    ts_str = re.sub(r'\.(\d{6})\d+', r'.\1', ts_str)
-
-    return datetime.fromisoformat(ts_str)
-
 
 db = connect_firebase(FS_CERTIFICATE)
 durations = extract_duration("sessions_web", db)
