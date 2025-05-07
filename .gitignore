@@ -7,3 +7,6 @@
 # Virtual environment files
 Pipfile
 Pipfile.lock
+
+# Google Firebase service account certificate
+firebase-admin.json
