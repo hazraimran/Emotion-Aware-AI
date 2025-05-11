@@ -12,6 +12,8 @@ def connect_firebase(cred_path):
         Authenticate with Google Firestore database and returns a connection client.
 
         cred: path to firebase service account certificate
+
+        Return: firestore database client object
     """
     # Verify certificate and initialize app
     creds = credentials.Certificate(FS_CERTIFICATE)
@@ -22,24 +24,31 @@ def connect_firebase(cred_path):
 
     return db
 
-def extract_duration(collection_name, db):
+def extract_queries_from_collection(collection:str, db):
+    """
+        Fetch all query objects from a firestore collection
+    
+        collection: name of firestore collection
+        db: firestore database client 
+
+        Return: a list of QuerySnapshot objects
+    """
+    session = db.collection(collection)
+    queries = session.stream()
+
+    return queries
+
+def extract_duration(queries):
     """
         Pull duration data of each session from Firestore database.
 
-        collection_name: firestore collection name
-        db: firestore database client 
+        queries: a list of firestore QuerySnapshot object
 
-        Return: a list of durations
+        Return: a list of integer durations 
     """
-    # Pull data collection from firestore
-    session = db.collection(collection_name)
-
-    # Stream data from collection
-    docs = session.stream()
-
     durations = []
-    for doc in docs:
-        doc_dict = doc.to_dict()
+    for query in queries:
+        doc_dict = query.to_dict()
         start = doc_dict.get("sessionStartTime")
         end = doc_dict.get("sessionEndTime")
 
@@ -54,9 +63,31 @@ def extract_duration(collection_name, db):
 
     return durations
 
+def extract_events(collection:str, db, queries:list, subcollection:str = 'events'):
+    """
+        Pulls nested subcollection from a given collection.
+        
+        collection: name of firestore collection
+        queries: a list of query objects in collection
+        db: firestore database client object
+        subcollection: nested subcollection within collection. Default to 'events'
+
+        Return: a list of dictionary containing data of items from subcollection
+    """
+    all_events = []
+    for query in queries:
+        # Retrive documents in collection by ID
+        ref = db.collection(collection).document(query.id)
+        # Get all events in document
+        events = ref.collection(subcollection).stream()
+        for event in events:
+            all_events.append(event.to_dict())
+
+    return all_events
+    
 def plot_duration(durations:list):
     """
-        Plot a histogram that shows distribution of session duration
+        Plot a histogram that shows distribution of session duration.
 
         durations: a list of session durations
     """
@@ -73,6 +104,8 @@ def plot_duration(durations:list):
     plt.tight_layout()
     plt.show()
 
-db = connect_firebase(FS_CERTIFICATE)
-durations = extract_duration("sessions_web", db)
-plot_duration(durations)
+if __name__ == "__main__":
+    db = connect_firebase(FS_CERTIFICATE)
+    docs = extract_queries_from_collection('sessions_web', db)
+    all_events = extract_events('sessions_web', db, docs)
+    print(all_events[0])
