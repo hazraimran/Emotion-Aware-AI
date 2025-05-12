@@ -88,36 +88,45 @@ def extract_events(collection:str, db, queries:list, subcollection:str = 'events
 
     return all_events
 
-def plot_emotion_trend(events):
+def plot_emotion_trend_with_markers(events):
     """
         Plots a line chart illustrating change of emotions over time.
 
         events: a list of dictionary containing event fields
     """
-    # Get all emotion logs
-    emotion_logs = [
-        e for e in events if e.get('eventType') == 'emotion_log'
-    ]
+    # Separate emotion logs and support events
+    emotion_logs = []
+    support_times = []
 
-    # Sort by timestamp
-    emotion_logs.sort(key=lambda x: datetime.fromisoformat(x['timestamp'].replace("Z", "+00:00")))
+    for event in events:
+        ts = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+        
+        if event.get("eventType") == "emotion_log":
+            emotion_logs.append((ts, event))
+        elif event.get("eventType") == "npc_response" and event.get("npcAction") == "helpmode":
+            support_times.append(ts)
 
-    # Collection probability of different emotions over event index
+    # Sort emotion logs chronologically
+    emotion_logs.sort(key=lambda x: x[0])
+
+    # Build emotion time series
     emotion_series = defaultdict(list)
-    for idx, entry in enumerate(emotion_logs):
-        probs = entry.get('probabilities')
-        for emotion, val in probs.items():
-            emotion_series[emotion].append((idx, val))
+    emotion_times = []
+
+    for idx, (ts, entry) in enumerate(emotion_logs):
+        emotion_times.append(ts)
+        for emotion, value in entry.get("probabilities", {}).items():
+            emotion_series[emotion].append((idx, value))
 
     # Create subplots
-    emotions = sorted(emotion_series)
-    num_emotions = len(emotions)
+    emotions = sorted(emotion_series.keys())
     cols = 3
-    rows = math.ceil(num_emotions / cols)
-
+    rows = math.ceil(len(emotions) / cols)
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 5, rows * 3), sharex=True)
     axes = axes.flatten()
 
+    # Plot emotion trends over time step
+    emotion_to_ax = {}
     for i, emotion in enumerate(emotions):
         ax = axes[i]
         series = emotion_series[emotion]
@@ -127,10 +136,34 @@ def plot_emotion_trend(events):
             ax.set_title(emotion.capitalize())
             ax.set_ylim(0, 1)
             ax.grid(True)
+            emotion_to_ax[emotion] = ax
         else:
             ax.set_visible(False)
     
-    plt.suptitle("Emotion Trends Over Time (One Subplot per Emotion)", fontsize=16)
+    # Plot support markers only on dominant emotion subplot
+    for st in support_times:
+        # Find closest emotion log time step
+        closest_idx = min(
+            range(len(emotion_times)),
+            key=lambda i: abs((emotion_times[i] - st).total_seconds())
+        )
+        _, closest_log = emotion_logs[closest_idx]
+
+        # Determine dominant emotion
+        probs = closest_log.get("probabilities", {})
+        if probs:
+            dominant_emotion = max(probs, key=probs.get)
+            ax = emotion_to_ax.get(dominant_emotion)
+            if ax:
+                ax.axvline(x=closest_idx, color='red', linestyle='--', alpha=0.6)
+
+    # Turn off unused axes
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    fig.supxlabel("Time Step")
+    fig.supylabel("Probability")
+    plt.suptitle("Emotion Trends Over Time with Support Markers", fontsize=16)
     plt.tight_layout()
     plt.show()
 
@@ -158,4 +191,4 @@ if __name__ == "__main__":
     db = connect_firebase(FS_CERTIFICATE)
     docs = extract_queries_from_collection('sessions_web', db)
     all_events = extract_events('sessions_web', db, docs)
-    plot_emotion_trend(all_events)
+    plot_emotion_trend_with_markers(all_events)
