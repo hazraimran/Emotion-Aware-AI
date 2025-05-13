@@ -6,6 +6,7 @@ import numpy as np
 from datetime import datetime
 from collections import defaultdict
 import math
+from matplotlib.lines import Line2D
 
 # Path to google firebase service account certificate
 FS_CERTIFICATE = './firebase-admin.json'
@@ -161,6 +162,8 @@ def plot_emotion_trend_with_markers(events):
     for j in range(i + 1, len(axes)):
         axes[j].set_visible(False)
 
+    support_line = Line2D([0], [0], color='red', linestyle='--', label='Support (NPC Help)')
+    fig.legend(handles=[support_line], loc='upper left', ncol=1, fontsize=10)
     fig.supxlabel("Time Step")
     fig.supylabel("Probability")
     plt.suptitle("Emotion Trends Over Time with Support Markers", fontsize=16)
