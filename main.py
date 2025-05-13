@@ -9,6 +9,7 @@ import math
 from matplotlib.lines import Line2D
 import pandas as pd
 import seaborn as sns
+from util import display_menu
 
 # Path to google firebase service account certificate
 FS_CERTIFICATE = './firebase-admin.json'
@@ -252,13 +253,28 @@ def plot_emotion_flow(events, interval=1):
     plt.tight_layout()
     plt.show()
 
-
 if __name__ == "__main__":
     db = connect_firebase(FS_CERTIFICATE)
     docs = extract_queries_from_collection('sessions_web', db)
     all_events = extract_events('sessions_web', db, docs)
-    # plot_emotion_trend_with_markers(all_events)
-    # plot_player_feedback(all_events)
-    plot_emotion_flow(all_events)
+
+    exit = False
+    while not exit:
+        display_menu()
+        choice = int(input("Your Choice(1-5): ").strip())
+        if choice == 1:
+            docs = extract_queries_from_collection('sessions_web', db)
+            durations = extract_duration(docs)
+            plot_duration(durations)
+        elif choice == 2:
+            plot_emotion_trend_with_markers(all_events)
+        elif choice == 3:
+            plot_player_feedback(all_events)
+        elif choice == 4:
+            plot_emotion_flow(all_events)
+        elif choice == 5:
+            exit = True
+        else:
+            print("Invalid input. Please enter again.")
     
     
