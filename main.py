@@ -7,6 +7,8 @@ from datetime import datetime
 from collections import defaultdict
 import math
 from matplotlib.lines import Line2D
+import pandas as pd
+import seaborn as sns
 
 # Path to google firebase service account certificate
 FS_CERTIFICATE = './firebase-admin.json'
@@ -214,11 +216,49 @@ def plot_player_feedback(events):
     plt.tight_layout()
     plt.show()
 
+def plot_emotion_flow(events, interval=1):
+    """
+        Plot a heatmap that visually demonstrates how emotions change over time
+
+        interval: interval in minutes between emotion buckets
+    """
+    emotion_times = defaultdict(lambda: defaultdict(int))
+    events.sort(key=lambda event: datetime.fromisoformat(event['timestamp'].replace("Z", "+00:00")))
+    base_time = None
+
+    for event in events:
+        if event.get('eventType') != "emotion_log":
+            continue
+    
+        ts = datetime.fromisoformat(event['timestamp'].replace("Z", "+00:00"))
+        if not base_time:
+            base_time = ts
+
+        minutes = int((ts - base_time).total_seconds() / 60)
+        bucket = (minutes // interval) * interval
+
+        emotion = event.get("emotion")
+        if emotion:
+            emotion_times[bucket][emotion] += 1
+
+    # Convert to DataFrame
+    df = pd.DataFrame(emotion_times).fillna(0).T.sort_index()
+
+    plt.figure(figsize=(12, 6))
+    sns.heatmap(df.T, cmap='YlGnBu', annot=True, fmt='g')
+    plt.xlabel("Time (minutes)")
+    plt.ylabel("Emotion")
+    plt.title("Emotion-State Heatmap Over Time")
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     db = connect_firebase(FS_CERTIFICATE)
     docs = extract_queries_from_collection('sessions_web', db)
     all_events = extract_events('sessions_web', db, docs)
     # plot_emotion_trend_with_markers(all_events)
-    plot_player_feedback(all_events)
+    # plot_player_feedback(all_events)
+    plot_emotion_flow(all_events)
     
     
