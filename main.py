@@ -190,8 +190,35 @@ def plot_duration(durations:list):
     plt.tight_layout()
     plt.show()
 
+def plot_player_feedback(events):
+    """
+        Plot a stacked bar chart that shows how players respond to NPC's suggestions
+    """
+    choice_count = defaultdict(int)
+    for event in events:
+        if event.get("eventType") == "player_response":
+            if event.get('playerChoice') == 'skip':
+                choice_count['Rejected'] += 1
+            else:
+                choice_count['Accepted'] += 1
+        
+    labels = list(choice_count.keys())
+    counts = list(choice_count.values())
+
+    _, ax = plt.subplots()
+    ax.bar("Category", counts[0], label=labels[0], color='red')
+    ax.bar("Category", counts[1], label=labels[1], color='green')
+    ax.set_ylabel("Count")
+    ax.set_title("Grace's Suggestion: Accepted or Rejected")
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2)
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == "__main__":
     db = connect_firebase(FS_CERTIFICATE)
     docs = extract_queries_from_collection('sessions_web', db)
     all_events = extract_events('sessions_web', db, docs)
-    plot_emotion_trend_with_markers(all_events)
+    # plot_emotion_trend_with_markers(all_events)
+    plot_player_feedback(all_events)
+    
+    
