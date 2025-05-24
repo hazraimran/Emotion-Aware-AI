@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from util import clean_timestamp
 import numpy as np
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, Counter
 import math
 from matplotlib.lines import Line2D
 import pandas as pd
@@ -173,6 +173,64 @@ def plot_emotion_trend_with_markers(events):
     plt.tight_layout()
     plt.show()
 
+def plot_task_time_by_emotion(events):
+    """
+        Plot average task completion time by the most dominant emotion
+
+        events: a list of dictionary containing event fields
+    """
+    tasks = defaultdict(list)
+
+    # Group all events by (sessionId, levelId)
+    for event in events:
+        type = event['eventType']
+        if type != 'emotion_log' or not event.get('levelId'):
+            continue
+        
+        key = (event['sessionId'], event['levelId'])
+        ts = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
+        tasks[key].append((ts, event['emotion']))
+
+    # Compute duration and dominant emotions
+    emotion_durations = defaultdict(list)
+
+    for _, entry in tasks.items():
+        entry.sort(key=lambda x: x[0])
+        timestamps = [ts for ts, _ in entry]
+        duration = int((timestamps[-1] - timestamps[0]).total_seconds() / 60)
+
+        emotion_counts = Counter([e for _, e in entry])
+        if not emotion_counts:
+            continue
+        dominant_emotion = emotion_counts.most_common(1)[0][0]
+        emotion_durations[dominant_emotion].append(duration)
+
+    # Step 3: Prepare DataFrame for plotting
+    df = pd.DataFrame([
+        (emotion, dur) for emotion, durations in emotion_durations.items() for dur in durations
+    ], columns=["Emotion", "Duration"])
+
+    # Compute mean and count per emotion
+    summary_df = df.groupby("Emotion").agg(
+        mean_duration=("Duration", "mean"),
+        count=("Duration", "size")
+    ).reset_index()
+
+    # Plot
+    plt.figure(figsize=(10, 6))
+    barplot = sns.barplot(data=summary_df, x="Emotion", y="mean_duration", palette="muted")
+
+    # Add count labels on top of bars
+    for i, row in summary_df.iterrows():
+        barplot.text(i, row["mean_duration"] + 0.2, f'n={row["count"]}', ha='center', va='bottom')
+
+    plt.ylabel("Mean Task Duration (minutes)")
+    plt.xlabel("Emotion")
+    plt.title("Mean Task Duration by Dominant Emotion")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
     
 def plot_duration(durations:list):
     """
@@ -261,7 +319,7 @@ if __name__ == "__main__":
     exit = False
     while not exit:
         display_menu()
-        choice = int(input("Your Choice(1-5): ").strip())
+        choice = int(input("Your Choice(1-6): ").strip())
         if choice == 1:
             docs = extract_queries_from_collection('sessions_web', db)
             durations = extract_duration(docs)
@@ -273,6 +331,8 @@ if __name__ == "__main__":
         elif choice == 4:
             plot_emotion_flow(all_events)
         elif choice == 5:
+            plot_task_time_by_emotion(all_events)
+        elif choice == 6:
             exit = True
         else:
             print("Invalid input. Please enter again.")
