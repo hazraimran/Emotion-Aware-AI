@@ -23,4 +23,5 @@ def display_menu():
         Display program menus to users
     """
     print("=================Grace's Performance====================")
-    print("1) Plot Duration\n2) Plot Emotion Trends\n3) Plot Player Feedback\n4) Plot Emotion Flow(Heatmap)\n5) Exit\n")
+    print("1) Plot Duration\n2) Plot Emotion Trends\n3) Plot Player Feedback\n"
+          "4) Plot Emotion Flow(Heatmap)\n5) Plot task completion by emotion\n6) Exit\n")
