@@ -275,7 +275,7 @@ def plot_player_feedback(events):
     plt.tight_layout()
     plt.show()
 
-def plot_emotion_flow(events, interval=1):
+def plot_emotion_flow(events, interval=3):
     """
         Plot a heatmap that visually demonstrates how emotions change over time
 
@@ -304,7 +304,7 @@ def plot_emotion_flow(events, interval=1):
     df = pd.DataFrame(emotion_times).fillna(0).T.sort_index()
 
     plt.figure(figsize=(12, 6))
-    sns.heatmap(df.T, cmap='YlGnBu', annot=True, fmt='g')
+    sns.heatmap(df.T, cmap='YlGnBu', fmt='g')
     plt.xlabel("Time (minutes)")
     plt.ylabel("Emotion")
     plt.title("Emotion-State Heatmap Over Time")
