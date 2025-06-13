@@ -169,7 +169,7 @@ def plot_emotion_trend_with_markers(events):
     fig.legend(handles=[support_line], loc='upper left', ncol=1, fontsize=10)
     fig.supxlabel("Time Step")
     fig.supylabel("Probability")
-    plt.suptitle("Emotion Trends Over Time with Support Markers", fontsize=16)
+    plt.suptitle("Emotion Trends Over Time", fontsize=16)
     plt.tight_layout()
     plt.show()
 
@@ -222,7 +222,7 @@ def plot_task_time_by_emotion(events):
 
     # Add count labels on top of bars
     for i, row in summary_df.iterrows():
-        barplot.text(i, row["mean_duration"] + 0.2, f'n={row["count"]}', ha='center', va='bottom')
+        barplot.text(i, row["mean_duration"], f'n={row["count"]}', ha='center', va='bottom')
 
     plt.ylabel("Mean Task Duration (minutes)")
     plt.xlabel("Emotion")
